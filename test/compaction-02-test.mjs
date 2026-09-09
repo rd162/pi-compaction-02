@@ -15,7 +15,7 @@ const jiti = createJiti(import.meta.url, {
 	},
 });
 
-const mod = await jiti.import(new URL("../extensions/compaction-02.ts", import.meta.url).href);
+const mod = await jiti.import("/Users/rd/.pi/agent/extensions/custom-compaction.ts");
 assert.equal(typeof mod.default, "function", "default export is a factory");
 
 function makeHarness(completeImpl, findResult = { id: "mock-model", reasoning: true }, cwd) { // mock stands in for Muse
@@ -338,6 +338,21 @@ const okResponse = {
 				Object.assign(process.env, saved);
 			}
 			console.log("PASS 24 env config");
+		}
+		// 25. v3 MGPC format: Mission/Premises/Knowledge Map/Mission Space + migration
+		{
+			let freshPrompt = "";
+			const h1 = makeHarness(async (_m, c) => { freshPrompt = c.messages[0].content[0].text; return okResponse; }, undefined, FIX);
+			await h1.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h1.ctx);
+			for (const marker of ["## Mission", "## Goals", "## Premises", "Risk if false", "## Knowledge Map", "Area › Domain", "## Mission Space", "discovery scan", "Stated:"]) {
+				assert.ok(freshPrompt.includes(marker), `fresh prompt has ${marker}`);
+			}
+			let mergePrompt = "";
+			const h2 = makeHarness(async (_m, c) => { mergePrompt = c.messages[0].content[0].text; return okResponse; }, undefined, FIX);
+			await h2.handler({ preparation: { ...prep, previousSummary: "OLD", customInstructions: undefined }, signal: {} }, h2.ctx);
+			assert.ok(mergePrompt.includes("HEADER MIGRATION"), "merge prompt migrates old headers");
+			assert.ok(mergePrompt.includes("Goal → Mission"), "migration maps Goal");
+			console.log("PASS 25 MGPC format");
 		}
 		console.log("ALL TESTS PASSED");
 	});

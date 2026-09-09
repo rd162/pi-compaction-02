@@ -12,7 +12,7 @@ const jiti = createJiti(import.meta.url, {
 		"@earendil-works/pi-ai": `${PI_ROOT}/node_modules/@earendil-works/pi-ai/dist/compat.js`,
 	},
 });
-const mod = await jiti.import(new URL("../extensions/compaction-02.ts", import.meta.url).href);
+const mod = await jiti.import("/Users/rd/.pi/agent/extensions/custom-compaction.ts");
 let handler;
 mod.default({ on: (ev, fn) => { handler = fn; } });
 const okResponse = { content: [{ type: "text", text: "S" }], stopReason: "stop" };

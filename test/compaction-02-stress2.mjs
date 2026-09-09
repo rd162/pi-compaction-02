@@ -18,7 +18,7 @@ const jiti = createJiti(import.meta.url, {
 		"@earendil-works/pi-ai": `${NM}/@earendil-works/pi-ai/dist/compat.js`,
 	},
 });
-const mod = await jiti.import(new URL("../extensions/compaction-02.ts", import.meta.url).href);
+const mod = await jiti.import("/Users/rd/.pi/agent/extensions/custom-compaction.ts");
 
 const FIX = "/tmp/mc-exotic";
 if (!existsSync(FIX)) mkdirSync(FIX, { recursive: true });

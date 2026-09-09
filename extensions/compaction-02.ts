@@ -77,45 +77,68 @@ Do NOT continue the conversation. Do NOT respond to any questions in the convers
 
 const BASE_PROMPT = `The messages above are a conversation to summarize. Write a structured context checkpoint summary so that another instance of you can resume the work with ONLY this summary and zero clarifying questions. The full history is deleted after this — compression that loses specifics is failure.
 
-FIRST, reason through the conversation chronologically (a few sentences per chunk): the user's requests, your approach, key decisions, files touched, errors hit, and any user corrections. THEN write the summary.
+FIRST, run a discovery scan (a few sentences per chunk, chronological):
+1. Explicit topics — what was stated outright (requests, actions, files, errors).
+2. Implications — what does the work IMPLY that was never stated? Unsaid assumptions
+   the work rests on (environment, versions, intent readings, tool availability) become
+   Premises; unstated limits become Constraints. If nothing new, stop.
+3. Transcript cues — hedging ("ideally", "if possible") marks NEGOTIABLE constraints;
+   note who holds veto (whose correction overrode what) and what went unchallenged.
 
-RULES:
-- Be thorough, not concise: long spans deserve multi-thousand-word summaries. Never drop specifics to save space.
-- QUOTE, don't paraphrase: constraints, decisions, error messages, user corrections, and the exact resumption point must appear verbatim.
-- Code: include FULL snippets (not summaries of code) for the current work, plus one line per file saying why it matters.
-- Errors: every error, failed approach and why it failed, and how it was fixed. Call out explicitly when the user corrected you.
-- Weight: give the most recent ~20% of the conversation the most detail — that is where work resumes.
-- File lists are appended mechanically after your text; do not duplicate them, but DO explain why key files matter.
+THEN write the summary. RULES:
+- Be thorough, not concise: long spans deserve multi-thousand-word summaries.
+- QUOTE, don't paraphrase: constraints, decisions, errors, corrections, resumption point — verbatim.
+- Every abstract claim anchored with a CONCRETE session example (a value, a path, a message quote).
+- Code: FULL snippets for current work, never summaries of code, plus why each file matters.
+- Errors: every error, failed approach and why it failed, fixes applied; user corrections quoted.
+- Weight the most recent ~20% heaviest — that is where work resumes.
+- File lists are appended mechanically after your text; explain why key files matter, don't duplicate.
+- Classify knowledge generically (Area › Domain), not just code: research findings, ops facts,
+  decisions, and domain rules all belong in the Knowledge Map with examples.
 - Do NOT use tools. Respond with ONLY the summary below.
 
 Use this EXACT format:
 
-## Goal
-[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]
-- Verbatim user requests: [direct quotes of each distinct explicit request]
+## Mission
+[One sentence: the terminal why. If the session has distinct threads, one line per thread.]
+[If the stated request differs from the inferred need, record both: Stated: ... / Needed: ...]
+
+## Goals
+1. [Concrete objective] — [done | active | blocked]
+
+## Premises
+| # | Premise (assumption the work rests on) | Source (stated / inferred from [what] / unchallenged) | Risk if false |
+| P1 | ... | ... | [what breaks] |
+[Or "(none established)" — never invent premises to fill the table.]
 
 ## Constraints & Preferences
-- [Any constraints, preferences, or requirements mentioned by user — quote exact wording]
-- [Or "(none)" if none were mentioned]
+| # | Constraint (exact wording) | Source (who imposed it) | Negotiable? (yes if hedged, else no) |
+| C1 | ... | ... | ... |
+[Or "(none)" if none were mentioned.]
 
-## Key Technical Concepts
-- [Technologies, frameworks, patterns, domain facts the work depends on]
+## Knowledge Map
+- [Area › Domain]: [concept/fact/rule] — e.g. [concrete session example]
+[Covers code AND non-code: findings, infra, procedures, domain rules.]
 
 ## Progress
 ### Done
 - [x] [Completed tasks/changes]
 
 ### In Progress
-- [ ] [Current work — describe precisely: what was being done immediately before this summary, with file names and full code snippets where applicable]
+- [ ] [Current work — precisely, with file names and full snippets where applicable]
 
 ### Errors & Corrections
-- [Error or failed approach]: [what happened, why it failed, fix applied; user corrections quoted verbatim]
+- [Error or failed approach]: [cause, fix; user corrections quoted verbatim]
 
 ### Blocked
 - [Issues preventing progress, if any]
 
 ## Key Decisions
 - **[Decision]**: [rationale — quote the deciding constraint where one exists]
+
+## Mission Space
+- Alternatives tried: [approach + fit against the Constraints above]
+- Open questions / knowledge gaps: [what the session never answered]
 
 ## Next Steps
 1. [Ordered list of what should happen next]
@@ -126,47 +149,67 @@ Use this EXACT format:
 - [Or "(none)" if not applicable]`;
 
 const UPDATE_INSTRUCTIONS = `Update the existing structured summary with new information from the NEW messages. The merged result is the ONLY record — the new messages are deleted after this. RULES:
-- PRESERVE all existing information from the previous summary; never drop entries to save space — grow the summary instead
-- ADD new progress, decisions, files, errors, and context from the new messages
-- UPDATE the Progress section: move items from "In Progress" to "Done" when completed; append new errors to "Errors & Corrections" with causes and fixes
-- UPDATE "Key Technical Concepts" with anything new the session now depends on
-- UPDATE "Next Steps" based on what was accomplished; refresh the verbatim resumption quote from the latest messages
-- QUOTE, don't paraphrase: new constraints, decisions, error messages, user corrections, resumption point — verbatim
-- New code: FULL snippets for current work, never summaries of code
-- Give the newest messages the most detail
-- If something is genuinely superseded (not merely old), you may remove it — say what and why
-- STATUS HYGIENE (mandatory): every In Progress item from the previous summary that the new messages finished moves to Done with its outcome; a Blocked item whose blocker no longer reproduces is removed with its resolution noted — never carry a resolved blocker forward; Next Steps must describe work that is still actually pending, never work already recorded as Done
+- PRESERVE all existing information; never drop entries to save space — grow instead
+- HEADER MIGRATION: previous summaries may use older headers — migrate, never drop:
+  Goal → Mission + Goals; Key Technical Concepts → Knowledge Map (add Area › Domain tags + examples);
+  Errors & Corrections stays; anything unmapped goes to Critical Context.
+- ADD from the new messages: progress, decisions, files, errors, and newly implied Premises
+  (assumptions the new work silently rests on, with source + risk-if-false).
+- UPDATE Goals statuses (done/active/blocked); move finished In Progress items to Done with outcomes.
+- UPDATE Constraints with new exact-wording entries + source + negotiability (hedged = negotiable).
+- UPDATE Knowledge Map generically (code AND findings/facts/rules), each with a concrete example.
+- UPDATE Mission Space: append tried alternatives with fit; resolve or carry open questions.
+- UPDATE Next Steps; refresh the verbatim resumption quote from the latest messages.
+- New code: FULL snippets for current work, never summaries of code.
+- QUOTE, don't paraphrase: new constraints, decisions, errors, corrections, resumption — verbatim.
+- Give the newest messages the most detail.
+- STATUS HYGIENE (mandatory): finished items move to Done with outcomes; resolved blockers
+  are removed with resolutions noted — never carry a resolved blocker forward; Next Steps
+  must be actually-pending work, never items already Done.
+- If something is genuinely superseded (not merely old), you may remove it — say what and why.
 - Do NOT use tools. Respond with ONLY the updated summary.
 
 Use this EXACT format:
 
-## Goal
-[Preserve existing goals and verbatim user requests, add new ones if the task expanded]
+## Mission
+[Preserve; add a line if the task gained a distinct thread; record Stated vs Needed on split]
+
+## Goals
+1. [Preserve all, update statuses, append new]
+
+## Premises
+| # | Premise | Source | Risk if false |
+[Preserve all rows, append new implied ones; drop only falsified premises, noting what broke]
 
 ## Constraints & Preferences
-- [Preserve existing (exact wording), add new ones discovered]
+| # | Constraint (exact wording) | Source | Negotiable? |
+[Preserve all, append new]
 
-## Key Technical Concepts
-- [Preserve existing, add new]
+## Knowledge Map
+- [Preserve all, tag Area › Domain, append new with concrete examples]
 
 ## Progress
 ### Done
-- [x] [Include previously done items AND newly completed items]
+- [x] [Previously done AND newly completed, with outcomes]
 
 ### In Progress
-- [ ] [Current work - update based on progress, with file names and full snippets where applicable]
+- [ ] [Current work, with file names and full snippets where applicable]
 
 ### Errors & Corrections
-- [Preserve all previous entries, append new errors/failed approaches with causes, fixes, and verbatim user corrections]
+- [Preserve all, append new with causes, fixes, verbatim corrections]
 
 ### Blocked
-- [Current blockers - remove only if resolved, noting the resolution]
+- [Current blockers only — resolved ones removed with resolution noted]
 
 ## Key Decisions
-- **[Decision]**: [rationale] (preserve all previous, add new — quote deciding constraints)
+- **[Decision]**: [rationale] (preserve all, add new — quote deciding constraints)
+
+## Mission Space
+- Alternatives tried: [preserve + append with fit]
+- Open questions / knowledge gaps: [resolve answered ones, carry the rest]
 
 ## Next Steps
-1. [Update based on current state]
+1. [Update based on current state — actually pending only]
 - Resumption point (verbatim quote from the latest messages showing exactly where work left off):
 
 ## Critical Context
