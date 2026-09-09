@@ -18,8 +18,8 @@ No hardcoded models. Everything is environment, read fresh on every compaction (
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `PI_COMPACTION_MODEL` | *(session model)* | `"provider/model-id"`, e.g. `openrouter/meta/muse-spark-1.3-contributor` |
-| `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
+| `PI_COMPACTION_MODEL` | *(session model)* | `"provider/model-id"`, e.g. `openrouter/meta/muse-spark-1.3` |
+| `PI_COMPACTION_REASONING` | `low` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
 | `PI_COMPACTION_MAX_TOKENS` | `16384` | Output cap, clamped to `2048..65536` and to the model's own max |
 
 Example (cheap dedicated summarizer):
