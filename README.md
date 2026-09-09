@@ -1,4 +1,4 @@
-# pi-smart-compaction
+# pi-compaction-02
 
 A `session_before_compact` hook for the [pi coding agent](https://github.com/badlogic/pi-mono) that routes compaction summaries to a **configurable model** instead of the session model — e.g. a cheap dedicated summarizer — while recovering the **file map pi's default extractor misses** (files touched via bash: `cat`/`sed`/`grep`/`jq`/`python -c`/redirects/`!` runs…).
 
@@ -7,9 +7,9 @@ Out of the box it uses your session model (zero config). Pin a cheap model and i
 ## Install
 
 ```bash
-pi install git:rd162/pi-smart-compaction
+pi install git:rd162/pi-compaction-02
 # or npm, once published:
-pi install npm:pi-smart-compaction
+pi install npm:pi-compaction-02
 ```
 
 ## Configure
@@ -43,10 +43,10 @@ Malformed `PI_COMPACTION_MODEL` warns and falls back to the session model. `reas
 Harnesses load the extension through pi's own `jiti` loader (same as production):
 
 ```bash
-node test/smart-compaction-test.mjs      # 24 unit tests
-node test/smart-compaction-stress.mjs    # 900-msg hostile spans, determinism
-node test/smart-compaction-stress2.mjs   # 56 exotic-tool commands (jq/jd/difft/bat/eza/sqlite3/ast-grep/ffmpeg…)
-node test/smart-compaction-100k.mjs      # 100k tool pairs, budget exhaustion
+node test/compaction-02-test.mjs      # 24 unit tests
+node test/compaction-02-stress.mjs    # 900-msg hostile spans, determinism
+node test/compaction-02-stress2.mjs   # 56 exotic-tool commands (jq/jd/difft/bat/eza/sqlite3/ast-grep/ffmpeg…)
+node test/compaction-02-100k.mjs      # 100k tool pairs, budget exhaustion
 ```
 
 (Test scripts live in `test/`; fixtures are created under `$TMPDIR` at runtime.)

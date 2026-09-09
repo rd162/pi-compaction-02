@@ -14,7 +14,7 @@ const jiti = createJiti(import.meta.url, {
 		"@earendil-works/pi-ai": `${PI_ROOT}/node_modules/@earendil-works/pi-ai/dist/compat.js`,
 	},
 });
-const mod = await jiti.import(new URL("../extensions/smart-compaction.ts", import.meta.url).href);
+const mod = await jiti.import(new URL("../extensions/compaction-02.ts", import.meta.url).href);
 
 const FIX = "/tmp/mc-stress";
 mkdirSync(FIX, { recursive: true });

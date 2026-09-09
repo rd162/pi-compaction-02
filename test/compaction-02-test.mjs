@@ -15,7 +15,7 @@ const jiti = createJiti(import.meta.url, {
 	},
 });
 
-const mod = await jiti.import(new URL("../extensions/smart-compaction.ts", import.meta.url).href);
+const mod = await jiti.import(new URL("../extensions/compaction-02.ts", import.meta.url).href);
 assert.equal(typeof mod.default, "function", "default export is a factory");
 
 function makeHarness(completeImpl, findResult = { id: "mock-model", reasoning: true }, cwd) { // mock stands in for Muse
