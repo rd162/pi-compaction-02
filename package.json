@@ -1,5 +1,5 @@
 {
-  "name": "pi-compaction",
+  "name": "pi-smart-compaction",
   "version": "1.0.0",
   "description": "Configurable cheap-model summarizer for pi coding agent with full bash file tracking",
   "keywords": ["pi-package"],

@@ -1,4 +1,4 @@
-// Exotic-tool battery for Muse Compaction tracker. Run:
+// Exotic-tool battery for Smart Compaction tracker. Run:
 // node /tmp/muse-compaction-stress2.mjs
 // Feeds real-world commands from non-standard CLI tools (jq/jd/difft/bat/eza/
 // sqlite3/ast-grep/ffmpeg/...) as STRINGS (tracker never executes) + plausible
@@ -18,7 +18,7 @@ const jiti = createJiti(import.meta.url, {
 		"@earendil-works/pi-ai": `${NM}/@earendil-works/pi-ai/dist/compat.js`,
 	},
 });
-const mod = await jiti.import(new URL("../extensions/pi-compaction.ts", import.meta.url).href);
+const mod = await jiti.import(new URL("../extensions/smart-compaction.ts", import.meta.url).href);
 
 const FIX = "/tmp/mc-exotic";
 if (!existsSync(FIX)) mkdirSync(FIX, { recursive: true });

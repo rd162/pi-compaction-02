@@ -1,5 +1,5 @@
 /**
- * Muse Compaction — pi's own summarization pipeline, but routed to a
+ * Smart Compaction — pi's own summarization pipeline, but routed to a
  * configurable model (PI_COMPACTION_MODEL, e.g. a cheap dedicated summarizer)
  * instead of the session model at session thinking level.
  * Every trick below mirrors pi 0.85.1's real implementation
@@ -1059,11 +1059,11 @@ export default function (pi: ExtensionAPI) {
 		const cfg = resolveCompactionConfig();
 		const rawModel = (process.env.PI_COMPACTION_MODEL ?? "").trim();
 		if (rawModel && (!cfg.provider || !cfg.modelId)) {
-			ctx.ui.notify(`Muse Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using session model`, "warning");
+			ctx.ui.notify(`Smart Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using session model`, "warning");
 		}
 		const model = (cfg.provider && cfg.modelId ? ctx.modelRegistry.find(cfg.provider, cfg.modelId) : undefined) ?? ctx.model;
 		if (!model) {
-			ctx.ui.notify("Muse Compaction: no model available, using default compaction", "warning");
+			ctx.ui.notify("Smart Compaction: no model available, using default compaction", "warning");
 			return;
 		}
 
@@ -1076,7 +1076,7 @@ export default function (pi: ExtensionAPI) {
 			return c === undefined || typeof c === "string" || Array.isArray(c);
 		});
 		ctx.ui.notify(
-			`Muse Compaction: summarizing ${allMessages.length} messages (${tokensBefore.toLocaleString()} tokens) with ${model.id}@${cfg.reasoning} (max ${cfg.maxTokens})...`,
+			`Smart Compaction: summarizing ${allMessages.length} messages (${tokensBefore.toLocaleString()} tokens) with ${model.id}@${cfg.reasoning} (max ${cfg.maxTokens})...`,
 			"info",
 		);
 
@@ -1085,7 +1085,7 @@ export default function (pi: ExtensionAPI) {
 			conversationText = serializeConversation(convertToLlm(allMessages));
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			ctx.ui.notify(`Muse Compaction: cannot serialize context (${message}), using default compaction`, "warning");
+			ctx.ui.notify(`Smart Compaction: cannot serialize context (${message}), using default compaction`, "warning");
 			return;
 		}
 
@@ -1131,13 +1131,13 @@ export default function (pi: ExtensionAPI) {
 			const stopReason = (response as { stopReason?: string }).stopReason;
 			if (stopReason === "error" || stopReason === "length") {
 				ctx.ui.notify(
-					`Muse Compaction: summarizer stopped (${stopReason}), using default compaction`,
+					`Smart Compaction: summarizer stopped (${stopReason}), using default compaction`,
 					"warning",
 				);
 				return;
 			}
 			if (response.content.some((block) => block.type === "toolCall")) {
-				ctx.ui.notify("Muse Compaction: summarizer called a tool, using default compaction", "warning");
+				ctx.ui.notify("Smart Compaction: summarizer called a tool, using default compaction", "warning");
 				return;
 			}
 
@@ -1148,7 +1148,7 @@ export default function (pi: ExtensionAPI) {
 
 			if (!summary.trim()) {
 				if (!signal.aborted)
-					ctx.ui.notify("Muse Compaction: empty summary, using default compaction", "warning");
+					ctx.ui.notify("Smart Compaction: empty summary, using default compaction", "warning");
 				return;
 			}
 			if (fileSection) summary += `\n\n${fileSection}`;
@@ -1164,7 +1164,7 @@ export default function (pi: ExtensionAPI) {
 			};
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			ctx.ui.notify(`Muse Compaction failed (${message}), using default compaction`, "error");
+			ctx.ui.notify(`Smart Compaction failed (${message}), using default compaction`, "error");
 			return;
 		}
 	});

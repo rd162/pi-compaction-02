@@ -1,4 +1,4 @@
-// Ephemeral test for Muse Compaction extension. Run:
+// Ephemeral test for Smart Compaction extension. Run:
 // node /tmp/muse-compaction-test.mjs
 import assert from "node:assert";
 import { createRequire } from "node:module";
@@ -15,7 +15,7 @@ const jiti = createJiti(import.meta.url, {
 	},
 });
 
-const mod = await jiti.import(new URL("../extensions/pi-compaction.ts", import.meta.url).href);
+const mod = await jiti.import(new URL("../extensions/smart-compaction.ts", import.meta.url).href);
 assert.equal(typeof mod.default, "function", "default export is a factory");
 
 function makeHarness(completeImpl, findResult = { id: "mock-model", reasoning: true }, cwd) { // mock stands in for Muse
@@ -81,7 +81,7 @@ const okResponse = {
 	assert.equal(opts.cacheRetention, "none");
 	assert.ok(opts.sessionId);
 	assert.equal(opts.reasoning, "medium");
-	assert.ok(notices.some(([l, m]) => m.includes("Muse Compaction: summarizing 2 messages")));
+	assert.ok(notices.some(([l, m]) => m.includes("Smart Compaction: summarizing 2 messages")));
 	console.log("PASS 1 happy path");
 }
 // 2. previous summary -> update-merge prompt
@@ -118,7 +118,7 @@ const okResponse = {
 {
 	const { handler, ctx, notices } = makeHarness(async () => { throw new Error("boom"); });
 	assert.equal(await handler(ev, ctx), undefined);
-	assert.ok(notices.some(([l, m]) => m.includes("Muse Compaction failed (boom)")));
+	assert.ok(notices.some(([l, m]) => m.includes("Smart Compaction failed (boom)")));
 	console.log("PASS 6 throw guard");
 }
 // 7. no model at all -> fallback
