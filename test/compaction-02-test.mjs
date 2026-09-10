@@ -349,7 +349,7 @@ const okResponse = {
 			let freshPrompt = "";
 			const h1 = makeHarness(async (_m, c) => { freshPrompt = c.messages[0].content[0].text; return okResponse; }, undefined, FIX);
 			await h1.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h1.ctx);
-			for (const marker of ["## Mission", "## Goals", "## Premises", "Risk if false", "## Knowledge Map", "Area › Domain", "## Mission Space", "discovery scan", "Stated:"]) {
+			for (const marker of ["## Mission", "## Goals", "## Premises", "Risk if false", "## Knowledge Map", "Area › Domain", "## Mission Space", "discovery scan", "Stated:", "no status here", "NOT execution failures", "go to Critical Context"]) {
 				assert.ok(freshPrompt.includes(marker), `fresh prompt has ${marker}`);
 			}
 			let mergePrompt = "";

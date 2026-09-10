@@ -110,7 +110,7 @@ Use this EXACT format:
 [If the stated request differs from the inferred need, record both: Stated: ... / Needed: ...]
 
 ## Goals
-1. [Concrete objective] — [done | active | blocked]
+1. [Concrete objective — no status here; status lives in Progress below]
 
 ## Premises
 | # | Premise (assumption the work rests on) | Source (stated / inferred from [what] / unchallenged) | Risk if false |
@@ -124,7 +124,8 @@ Use this EXACT format:
 
 ## Knowledge Map
 - [Area › Domain]: [concept/fact/rule] — e.g. [concrete session example]
-[Covers code AND non-code: findings, infra, procedures, domain rules.]
+[Understanding needed to work here (code AND findings/facts/rules); exact resume values
+ go to Critical Context, not here.]
 
 ## Progress
 ### Done
@@ -143,7 +144,7 @@ Use this EXACT format:
 - **[Decision]**: [rationale — quote the deciding constraint where one exists]
 
 ## Mission Space
-- Alternatives tried: [approach + fit against the Constraints above]
+- Alternatives tried: [options weighed + fit against Constraints — NOT execution failures, those go to Errors & Corrections]
 - Open questions / knowledge gaps: [what the session never answered]
 
 ## Next Steps
@@ -192,7 +193,7 @@ Use this EXACT format:
 [Preserve; add a line if the task gained a distinct thread; record Stated vs Needed on split]
 
 ## Goals
-1. [Preserve all, update statuses, append new]
+1. [Preserve all objectives, append new — no statuses here; status lives in Progress]
 
 ## Premises
 | # | Premise | Source | Risk if false |
@@ -203,7 +204,7 @@ Use this EXACT format:
 [Preserve all, append new]
 
 ## Knowledge Map
-- [Preserve all, tag Area › Domain, append new with concrete examples]
+- [Preserve all, tag Area › Domain, append new with concrete examples — exact resume values go to Critical Context]
 
 ## Progress
 ### Done
@@ -222,7 +223,7 @@ Use this EXACT format:
 - **[Decision]**: [rationale] (preserve all, add new — quote deciding constraints)
 
 ## Mission Space
-- Alternatives tried: [preserve + append with fit]
+- Alternatives tried: [preserve + append options with fit — execution failures stay in Errors & Corrections]
 - Open questions / knowledge gaps: [resolve answered ones, carry the rest]
 
 ## Next Steps
