@@ -328,11 +328,16 @@ const okResponse = {
 				const opts2 = h2.calls.find((c) => c[0] === "complete")[3];
 				assert.equal(opts2.reasoning, "medium", "invalid reasoning -> default");
 				assert.equal(opts2.maxTokens, 16384, "invalid maxTokens -> default");
-				assert.ok(!h2.calls.some((c) => c[0] === "find"), "no env model -> session model, find skipped");
+				assert.deepEqual(h2.calls.find((c) => c[0] === "find").slice(1), ["openrouter", "meta/muse-spark-1.3-contributor"], "no env -> built-in default");
+				const h2b = makeHarness(async () => okResponse, null, FIX); // null: find misses everywhere
+				h2b.ctx.model = { id: "sess", reasoning: false }; // default unresolvable, session exists
+				const out2b = await h2b.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h2b.ctx);
+				assert.ok(out2b?.compaction, "unresolvable default -> session fallback still compacts");
+				assert.equal(h2b.calls.find((c) => c[0] === "complete")[1].id, "sess", "session model used");
 				process.env.PI_COMPACTION_MODEL = "nonsense-no-slash";
 				const h3 = makeHarness(async () => okResponse, { id: "sess", reasoning: false }, FIX);
 				const out3 = await h3.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h3.ctx);
-				assert.ok(out3?.compaction, "malformed model -> session fallback still compacts");
+				assert.ok(out3?.compaction, "malformed model -> default fallback still compacts");
 			} finally {
 				for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
 				Object.assign(process.env, saved);

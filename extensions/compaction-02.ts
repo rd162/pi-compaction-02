@@ -38,12 +38,14 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
 
 // Summarizer configuration — environment, read fresh on every compaction (no reload
-// needed). No hardcoded models: out of the box the session model summarizes;
-// pin a cheap dedicated model via PI_COMPACTION_MODEL="provider/model-id".
-//   PI_COMPACTION_MODEL    "provider/model-id" (default: session model)
+// needed). Out of the box a cheap default summarizer is used; override it (or fall
+// back to the session model by pointing at it) via PI_COMPACTION_MODEL="provider/model-id".
+//   PI_COMPACTION_MODEL    "provider/model-id" (default: openrouter/meta/muse-spark-1.3-contributor)
 //   PI_COMPACTION_REASONING off|minimal|low|medium|high|xhigh|max (default: medium)
 //   PI_COMPACTION_MAX_TOKENS  output cap (default 16384, clamped 2048..65536 and
 //                          to the model's own maxTokens)
+const DEFAULT_PROVIDER = "openrouter";
+const DEFAULT_MODEL_ID = "meta/muse-spark-1.3-contributor";
 const DEFAULT_REASONING = "medium";
 const DEFAULT_MAX_TOKENS = 16384;
 const VALID_REASONING = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
@@ -1112,14 +1114,18 @@ export default function (pi: ExtensionAPI) {
 				: []),
 		].join("\n\n");
 
-		// Model selection: pinned model from PI_COMPACTION_MODEL, else the session model.
-		// Malformed PI_COMPACTION_MODEL (no provider/id) falls back with a warning.
+		// Model selection: PI_COMPACTION_MODEL pin, else the built-in default summarizer,
+		// else the session model. The default is a documented preference, not a lock-in —
+		// any provider/model works via env, and an unresolvable default falls through.
 		const cfg = resolveCompactionConfig();
 		const rawModel = (process.env.PI_COMPACTION_MODEL ?? "").trim();
 		if (rawModel && (!cfg.provider || !cfg.modelId)) {
-			ctx.ui.notify(`Smart Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using session model`, "warning");
+			ctx.ui.notify(`Smart Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using default summarizer`, "warning");
 		}
-		const model = (cfg.provider && cfg.modelId ? ctx.modelRegistry.find(cfg.provider, cfg.modelId) : undefined) ?? ctx.model;
+		const model =
+			(cfg.provider && cfg.modelId ? ctx.modelRegistry.find(cfg.provider, cfg.modelId) : undefined) ??
+				ctx.modelRegistry.find(DEFAULT_PROVIDER, DEFAULT_MODEL_ID) ??
+				ctx.model;
 		if (!model) {
 			ctx.ui.notify("Smart Compaction: no model available, using default compaction", "warning");
 			return;

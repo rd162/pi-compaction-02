@@ -18,18 +18,18 @@ No hardcoded models. Everything is environment, read fresh on every compaction (
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `PI_COMPACTION_MODEL` | *(session model)* | `"provider/model-id"`, e.g. `openrouter/meta/muse-spark-1.3` |
-| `PI_COMPACTION_REASONING` | `low` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
+| `PI_COMPACTION_MODEL` | `openrouter/meta/muse-spark-1.3-contributor` | `"provider/model-id"` — any model; unresolvable → session model |
+| `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
 | `PI_COMPACTION_MAX_TOKENS` | `16384` | Output cap, clamped to `2048..65536` and to the model's own max |
 
-Example (cheap dedicated summarizer):
+Example (override the default with your own summarizer):
 
 ```bash
-export PI_COMPACTION_MODEL="openrouter/meta/muse-spark-1.3-contributor"
-export PI_COMPACTION_REASONING="medium"
+export PI_COMPACTION_MODEL="anthropic/claude-haiku-4-5"
+export PI_COMPACTION_REASONING="low"
 ```
 
-Malformed `PI_COMPACTION_MODEL` warns and falls back to the session model. `reasoning` is only requested on models that advertise `reasoning: true` (otherwise the call would throw and you'd lose the hook to default compaction).
+Malformed `PI_COMPACTION_MODEL` warns and falls back to the built-in default. `reasoning` is only requested on models that advertise `reasoning: true` (otherwise the call would throw and you'd lose the hook to default compaction).
 
 ## What it does
 
