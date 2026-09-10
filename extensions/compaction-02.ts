@@ -26,7 +26,9 @@
  *
  * Deliberately NOT ported (default fallback covers them):
  *  - transient retry (retryAssistantCall): on failure we return undefined and
- *    pi's default compaction runs instead — fail-safe over retry cleverness
+ *    pi's default compaction runs instead — fail-safe over retry cleverness.
+ *    Sole exception: stopReason `length` gets ONE retry at 2x budget (capped by
+ *    the model max), because `length` means our budget was too small, not a transient.
  *  - split-turn two-pass merge: we summarize the whole spill range in one
  *    call with a full token budget, which preserves the same information
  */
@@ -1145,8 +1147,10 @@ export default function (pi: ExtensionAPI) {
 		}
 		promptText += basePrompt;
 
-		try {
-			const response = await ctx.modelRegistry.complete(
+		const modelMax = (model as { maxTokens?: unknown }).maxTokens as number | undefined;
+		const baseBudget = Math.min(cfg.maxTokens, modelMax ?? cfg.maxTokens);
+		const runOnce = (budget: number) =>
+			ctx.modelRegistry.complete(
 				model,
 				{
 					systemPrompt: SYSTEM_PROMPT,
@@ -1159,7 +1163,7 @@ export default function (pi: ExtensionAPI) {
 					],
 				},
 				{
-					maxTokens: Math.min(cfg.maxTokens, (model as { maxTokens?: unknown }).maxTokens as number | undefined ?? cfg.maxTokens),
+					maxTokens: budget,
 					signal,
 					cacheRetention: "none",
 					sessionId: uuidv7(),
@@ -1169,9 +1173,18 @@ export default function (pi: ExtensionAPI) {
 					reasoning: cfg.reasoning !== "off" && (model as { reasoning?: unknown }).reasoning === true ? cfg.reasoning : undefined,
 				},
 			);
-
+		try {
+			let response = await runOnce(baseBudget);
+			let stopReason = (response as { stopReason?: string }).stopReason;
+			// Length-only retry (once, 2x budget): `length` means OUR budget was too small
+			// for the span — not a transient. `error` still falls back immediately.
+			const retryBudget = Math.min(baseBudget * 2, modelMax ?? baseBudget * 2);
+			if (stopReason === "length" && retryBudget > baseBudget) {
+				ctx.ui.notify(`Smart Compaction: summary hit ${baseBudget} tokens, retrying once at ${retryBudget}...`, "warning");
+				response = await runOnce(retryBudget);
+				stopReason = (response as { stopReason?: string }).stopReason;
+			}
 			// Same failure guards as pi: partial/errored output must never checkpoint.
-			const stopReason = (response as { stopReason?: string }).stopReason;
 			if (stopReason === "error" || stopReason === "length") {
 				ctx.ui.notify(
 					`Smart Compaction: summarizer stopped (${stopReason}), using default compaction`,

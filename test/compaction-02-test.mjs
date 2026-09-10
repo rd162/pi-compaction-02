@@ -354,6 +354,20 @@ const okResponse = {
 			assert.ok(mergePrompt.includes("Goal → Mission"), "migration maps Goal");
 			console.log("PASS 25 MGPC format");
 		}
+		// 26. length-only retry: one 2x retry on `length`, fallback if still capped
+		{
+			let n = 0;
+			const budgets = [];
+			const h = makeHarness(async (_m, _c, o) => { n++; budgets.push(o.maxTokens); return n === 1 ? { content: [], usage: {}, stopReason: "length" } : okResponse; }, { id: "m", reasoning: false }, FIX);
+			const out = await h.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h.ctx);
+			assert.ok(out?.compaction, "retry succeeds");
+			assert.deepEqual(budgets, [16384, 32768], "single 2x retry");
+			const h2 = makeHarness(async () => ({ content: [], usage: {}, stopReason: "length" }), { id: "m", reasoning: false }, FIX);
+			assert.equal(await h2.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h2.ctx), undefined, "capped twice -> fallback");
+			const h3 = makeHarness(async () => ({ content: [], usage: {}, stopReason: "length" }), { id: "m", reasoning: false, maxTokens: 16384 }, FIX);
+			assert.equal(await h3.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h3.ctx), undefined, "no headroom -> no retry, fallback");
+			console.log("PASS 26 length retry");
+		}
 		console.log("ALL TESTS PASSED");
 	});
 }
