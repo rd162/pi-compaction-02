@@ -39,17 +39,16 @@ import { CONFIG_DIR_NAME, convertToLlm, getAgentDir, serializeConversation } fro
 
 // Summarizer configuration — read fresh on every compaction (no reload needed).
 // Precedence per field: PI_COMPACTION_* env > project .pi/settings.json >
-// user-global settings.json > built-in default. The settings section is:
+// user-global settings.json > session model. No model names ship in this file
+// (publish rule) — pin yours in settings.json. The settings section is:
 //   "smartCompaction": { "model": "provider/model-id", "reasoning": "medium",
 //                          "maxTokens": 24576 }
 // Env still wins (useful for one-off overrides); any unreadable file is ignored.
-//   PI_COMPACTION_MODEL    "provider/model-id" (default: openrouter/meta/muse-spark-1.3-contributor)
+//   PI_COMPACTION_MODEL    "provider/model-id" (default: session model — no names ship here)
 //   PI_COMPACTION_REASONING off|minimal|low|medium|high|xhigh|max (default: medium)
 //   PI_COMPACTION_MAX_TOKENS  output cap (default 24576, clamped 2048..65536 and
 //                          to the model's own maxTokens)
 const SETTINGS_KEY = "smartCompaction";
-const DEFAULT_PROVIDER = "openrouter";
-const DEFAULT_MODEL_ID = "meta/muse-spark-1.3-contributor";
 const DEFAULT_REASONING = "medium";
 const DEFAULT_MAX_TOKENS = 24576; // ≈ pi's own min(0.8 * reserveTokens, model.max) at 32k reserve (round-5 review)
 const VALID_REASONING = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
@@ -1180,11 +1179,11 @@ export default function (pi: ExtensionAPI) {
 		const cfg = resolveCompactionConfig(process.env, fileGlobal, fileProject);
 		const rawModel = (process.env.PI_COMPACTION_MODEL ?? "").trim() || fileProject.model || fileGlobal.model || "";
 		if (rawModel && (!cfg.provider || !cfg.modelId)) {
-			ctx.ui.notify(`Smart Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using default summarizer`, "warning");
+			ctx.ui.notify(`Smart Compaction: ignoring malformed model ${JSON.stringify(rawModel)} (want "provider/model-id"), using session model`, "warning");
 		}
+		// No built-in model default (publish rule): env > project > global > session model.
 		const model =
 			(cfg.provider && cfg.modelId ? ctx.modelRegistry.find(cfg.provider, cfg.modelId) : undefined) ??
-				ctx.modelRegistry.find(DEFAULT_PROVIDER, DEFAULT_MODEL_ID) ??
 				ctx.model;
 		if (!model) {
 			ctx.ui.notify("Smart Compaction: no model available, using default compaction", "warning");
