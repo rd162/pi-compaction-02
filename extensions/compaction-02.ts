@@ -93,7 +93,9 @@ THEN write the summary. RULES:
 - Every abstract claim anchored with a CONCRETE session example (a value, a path, a message quote).
 - Code: FULL snippets for current work, never summaries of code, plus why each file matters.
 - Errors: every error, failed approach and why it failed, fixes applied; user corrections quoted.
-- Weight the most recent ~20% heaviest — that is where work resumes.
+- Weight the most recent ~20% heaviest — that is where work resumes. Before finishing, self-check:
+  list the 3–5 newest load-bearing facts and confirm EACH appears; the newest thread gets the
+  most words even if it means compressing older material harder.
 - File lists are appended mechanically after your text; explain why key files matter, don't duplicate.
 - Classify knowledge generically (Area › Domain), not just code: research findings, ops facts,
   decisions, and domain rules all belong in the Knowledge Map with examples.
@@ -151,7 +153,18 @@ Use this EXACT format:
 - [Or "(none)" if not applicable]`;
 
 const UPDATE_INSTRUCTIONS = `Update the existing structured summary with new information from the NEW messages. The merged result is the ONLY record — the new messages are deleted after this. RULES:
-- PRESERVE all existing information; never drop entries to save space — grow instead
+- PRESERVE all existing information; never drop entries to save space — grow instead.
+- NEWNESS SUPREMACY: when the previous summary and the NEW messages conflict, the NEW messages
+  win unconditionally. Identifier classes that go stale across compactions — model ids,
+  file paths, repo/branch names, test counts, version numbers, published URLs — MUST be
+  deleted in their old form, never merged alongside the new form. A summary that says both
+  "pinned model X" and "model configurable via env" is a FAILED summary.
+- MARGINAL-INFORMATION RULE: the previous summary is already checkpointed in session history
+  — your job is the NEW thread, not re-typing the old one. Compress OLD entries to one line
+  each unless still load-bearing; spend the majority of words on the newest work. Information
+  loss on old trivia is acceptable; loss on the newest thread is failure.
+- Before finishing, self-check: list the 3–5 newest load-bearing facts (renames, config changes,
+  published artifacts, fixes with their verification) and confirm EACH appears in the output.
 - HEADER MIGRATION: previous summaries may use older headers — migrate, never drop:
   Goal → Mission + Goals; Key Technical Concepts → Knowledge Map (add Area › Domain tags + examples);
   Errors & Corrections stays; anything unmapped goes to Critical Context.

@@ -368,6 +368,20 @@ const okResponse = {
 			assert.equal(await h3.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h3.ctx), undefined, "no headroom -> no retry, fallback");
 			console.log("PASS 26 length retry");
 		}
+		// 27. anti-staleness: newness supremacy + marginal-information + self-check
+		{
+			let freshPrompt = "";
+			const h1 = makeHarness(async (_m, c) => { freshPrompt = c.messages[0].content[0].text; return okResponse; }, undefined, FIX);
+			await h1.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h1.ctx);
+			assert.ok(freshPrompt.includes("self-check"), "fresh prompt self-checks recency");
+			let mergePrompt = "";
+			const h2 = makeHarness(async (_m, c) => { mergePrompt = c.messages[0].content[0].text; return okResponse; }, undefined, FIX);
+			await h2.handler({ preparation: { ...prep, previousSummary: "OLD", customInstructions: undefined }, signal: {} }, h2.ctx);
+			for (const marker of ["NEWNESS SUPREMACY", "MARGINAL-INFORMATION", "already checkpointed", "MUST be", "FAILED summary"]) {
+				assert.ok(mergePrompt.includes(marker), `merge prompt has ${marker}`);
+			}
+			console.log("PASS 27 anti-staleness");
+		}
 		console.log("ALL TESTS PASSED");
 	});
 }
