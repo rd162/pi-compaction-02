@@ -41,14 +41,14 @@ import { CONFIG_DIR_NAME, convertToLlm, getAgentDir, serializeConversation } fro
 // Precedence per field: PI_COMPACTION_* env > project .pi/settings.json >
 // user-global settings.json > session model. No model names ship in this file
 // (publish rule) — pin yours in settings.json. The settings section is:
-//   "smartCompaction": { "model": "provider/model-id", "reasoning": "medium",
+//   "compaction02": { "model": "provider/model-id", "reasoning": "medium",
 //                          "maxTokens": 24576 }
 // Env still wins (useful for one-off overrides); any unreadable file is ignored.
 //   PI_COMPACTION_MODEL    "provider/model-id" (default: session model — no names ship here)
 //   PI_COMPACTION_REASONING off|minimal|low|medium|high|xhigh|max (default: medium)
 //   PI_COMPACTION_MAX_TOKENS  output cap (default 24576, clamped 2048..65536 and
 //                          to the model's own maxTokens)
-const SETTINGS_KEY = "smartCompaction";
+const SETTINGS_KEY = "compaction02";
 const DEFAULT_REASONING = "medium";
 const DEFAULT_MAX_TOKENS = 24576; // ≈ pi's own min(0.8 * reserveTokens, model.max) at 32k reserve (round-5 review)
 const VALID_REASONING = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
@@ -60,7 +60,7 @@ interface CompactionModelConfig {
 	maxTokens: number;
 }
 
-// Raw `smartCompaction` section from one settings file. Pure: unknown in, strings out.
+// Raw `compaction02` section from one settings file. Pure: unknown in, strings out.
 interface FileSection {
 	model?: string;
 	reasoning?: string;

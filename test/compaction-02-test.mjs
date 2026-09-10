@@ -395,7 +395,7 @@ const okResponse = {
 			const saved = { ...process.env };
 			try {
 				fs.mkdirSync(projDir, { recursive: true });
-				fs.writeFileSync(projFile, JSON.stringify({ smartCompaction: { model: "fileprov/fm", reasoning: "low", maxTokens: 9000 } }));
+				fs.writeFileSync(projFile, JSON.stringify({ compaction02: { model: "fileprov/fm", reasoning: "low", maxTokens: 9000 } }));
 				const h = makeHarness(async () => okResponse, { id: "m", reasoning: true }, FIX);
 				await h.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h.ctx);
 				assert.deepEqual(h.calls.find((c) => c[0] === "find").slice(1), ["fileprov", "fm"], "file model used");

@@ -18,7 +18,7 @@ Precedence per field: `PI_COMPACTION_*` env → project `.pi/settings.json` → 
 
 | Field | Env var | Default | Meaning |
 |---|---|---|---|
-| `model` | `PI_COMPACTION_MODEL` | *(session model — no names ship)* | `"provider/model-id"` — pin yours in env or `smartCompaction.model` |
+| `model` | `PI_COMPACTION_MODEL` | *(session model — no names ship)* | `"provider/model-id"` — pin yours in env or `compaction02.model` |
 | `reasoning` | `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
 | `maxTokens` | `PI_COMPACTION_MAX_TOKENS` | `24576` (≈ pi's own 0.8 × reserve budget) | Output cap, clamped to `2048..65536` and to the model's own max |
 
@@ -26,7 +26,7 @@ Settings file section (same keys, no `PI_COMPACTION_` prefix):
 
 ```json
 {
-  "smartCompaction": {
+  "compaction02": {
     "model": "openrouter/meta/muse-spark-1.3-contributor",
     "reasoning": "medium",
     "maxTokens": 24576
