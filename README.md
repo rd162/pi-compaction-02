@@ -14,22 +14,27 @@ pi install npm:pi-compaction-02
 
 ## Configure
 
-No hardcoded models. Everything is environment, read fresh on every compaction (no `/reload` needed):
+Precedence per field: `PI_COMPACTION_*` env → project `.pi/settings.json` → user-global `settings.json` → built-in default. Everything is read fresh on every compaction (no `/reload` needed).
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `PI_COMPACTION_MODEL` | `openrouter/meta/muse-spark-1.3-contributor` | `"provider/model-id"` — any model; unresolvable → session model |
-| `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
-| `PI_COMPACTION_MAX_TOKENS` | `24576` (≈ pi's own 0.8 × reserve budget) | Output cap, clamped to `2048..65536` and to the model's own max |
+| Field | Env var | Default | Meaning |
+|---|---|---|---|
+| `model` | `PI_COMPACTION_MODEL` | `openrouter/meta/muse-spark-1.3-contributor` | `"provider/model-id"` — any model; unresolvable → session model |
+| `reasoning` | `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
+| `maxTokens` | `PI_COMPACTION_MAX_TOKENS` | `24576` (≈ pi's own 0.8 × reserve budget) | Output cap, clamped to `2048..65536` and to the model's own max |
 
-Example (override the default with your own summarizer):
+Settings file section (same keys, no `PI_COMPACTION_` prefix):
 
-```bash
-export PI_COMPACTION_MODEL="anthropic/claude-haiku-4-5"
-export PI_COMPACTION_REASONING="low"
+```json
+{
+  "smartCompaction": {
+    "model": "openrouter/meta/muse-spark-1.3-contributor",
+    "reasoning": "medium",
+    "maxTokens": 24576
+  }
+}
 ```
 
-Malformed `PI_COMPACTION_MODEL` warns and falls back to the built-in default. `reasoning` is only requested on models that advertise `reasoning: true` (otherwise the call would throw and you'd lose the hook to default compaction).
+Malformed values warn and fall back one level. `reasoning` is only requested on models that advertise `reasoning: true` (otherwise the call would throw and you'd lose the hook to default compaction).
 
 ## What it does
 

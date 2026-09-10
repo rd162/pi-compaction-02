@@ -35,15 +35,19 @@
 
 import { uuidv7 } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
+import { CONFIG_DIR_NAME, convertToLlm, getAgentDir, serializeConversation } from "@earendil-works/pi-coding-agent";
 
-// Summarizer configuration — environment, read fresh on every compaction (no reload
-// needed). Out of the box a cheap default summarizer is used; override it (or fall
-// back to the session model by pointing at it) via PI_COMPACTION_MODEL="provider/model-id".
+// Summarizer configuration — read fresh on every compaction (no reload needed).
+// Precedence per field: PI_COMPACTION_* env > project .pi/settings.json >
+// user-global settings.json > built-in default. The settings section is:
+//   "smartCompaction": { "model": "provider/model-id", "reasoning": "medium",
+//                          "maxTokens": 24576 }
+// Env still wins (useful for one-off overrides); any unreadable file is ignored.
 //   PI_COMPACTION_MODEL    "provider/model-id" (default: openrouter/meta/muse-spark-1.3-contributor)
 //   PI_COMPACTION_REASONING off|minimal|low|medium|high|xhigh|max (default: medium)
-//   PI_COMPACTION_MAX_TOKENS  output cap (default 16384, clamped 2048..65536 and
+//   PI_COMPACTION_MAX_TOKENS  output cap (default 24576, clamped 2048..65536 and
 //                          to the model's own maxTokens)
+const SETTINGS_KEY = "smartCompaction";
 const DEFAULT_PROVIDER = "openrouter";
 const DEFAULT_MODEL_ID = "meta/muse-spark-1.3-contributor";
 const DEFAULT_REASONING = "medium";
@@ -57,18 +61,72 @@ interface CompactionModelConfig {
 	maxTokens: number;
 }
 
-function resolveCompactionConfig(env: NodeJS.ProcessEnv = process.env): CompactionModelConfig {
-	let provider: string | undefined;
-	let modelId: string | undefined;
-	const rawModel = (env.PI_COMPACTION_MODEL ?? "").trim();
-	const slash = rawModel.indexOf("/");
-	if (slash > 0 && slash < rawModel.length - 1) {
-		provider = rawModel.slice(0, slash);
-		modelId = rawModel.slice(slash + 1);
+// Raw `smartCompaction` section from one settings file. Pure: unknown in, strings out.
+interface FileSection {
+	model?: string;
+	reasoning?: string;
+	maxTokens?: number;
+}
+
+function parseFileSection(json: unknown): FileSection {
+	if (!json || typeof json !== "object") return {};
+	const rec = (json as Record<string, unknown>)[SETTINGS_KEY];
+	if (!rec || typeof rec !== "object") return {};
+	const r = rec as Record<string, unknown>;
+	const out: FileSection = {};
+	if (typeof r.model === "string" && r.model.trim()) out.model = r.model.trim();
+	if (typeof r.reasoning === "string" && r.reasoning.trim()) out.reasoning = r.reasoning.trim();
+	if (typeof r.maxTokens === "number" && Number.isFinite(r.maxTokens)) out.maxTokens = r.maxTokens;
+	return out;
+}
+
+// Load global + project sections. `paths` is test-only injection (default: real paths).
+// Every failure (missing/unreadable/invalid JSON) yields {} — never throws.
+function loadFileSections(cwd: string, paths?: { global?: string; project?: string }): { fileGlobal: FileSection; fileProject: FileSection } {
+	const read = (p: string | undefined): FileSection => {
+		if (!p) return {};
+		try {
+			return parseFileSection(JSON.parse(readFileSync(p, "utf8")));
+		} catch {
+			return {};
+		}
+	};
+	// Each path resolves independently: a broken global lookup must never kill the
+	// project read (round-5 field note: getSettingsPath exists in types but not at runtime).
+	let globalPath: string | undefined;
+	try {
+		globalPath = paths?.global ?? resolve(getAgentDir(), "settings.json");
+	} catch {
+		globalPath = undefined;
 	}
-	const rawReasoning = (env.PI_COMPACTION_REASONING ?? "").trim().toLowerCase();
+	let projectPath: string | undefined;
+	try {
+		projectPath = paths?.project ?? resolve(cwd, CONFIG_DIR_NAME, "settings.json");
+	} catch {
+		projectPath = undefined;
+	}
+	return { fileGlobal: read(globalPath), fileProject: read(projectPath) };
+}
+
+function splitModel(raw: string): { provider?: string; modelId?: string } {
+	const slash = raw.indexOf("/");
+	if (slash > 0 && slash < raw.length - 1)
+		return { provider: raw.slice(0, slash), modelId: raw.slice(slash + 1) };
+	return {};
+}
+
+function resolveCompactionConfig(
+	env: NodeJS.ProcessEnv = process.env,
+	fileGlobal: FileSection = {},
+	fileProject: FileSection = {},
+): CompactionModelConfig {
+	// Per-field precedence: env > project file > global file > default.
+	const rawModel = (env.PI_COMPACTION_MODEL ?? "").trim() || fileProject.model || fileGlobal.model || "";
+	const { provider, modelId } = splitModel(rawModel);
+	const rawReasoning = ((env.PI_COMPACTION_REASONING ?? "").trim() || fileProject.reasoning || fileGlobal.reasoning || "").toLowerCase();
 	const reasoning = VALID_REASONING.has(rawReasoning) ? rawReasoning : DEFAULT_REASONING;
-	const rawMax = parseInt(env.PI_COMPACTION_MAX_TOKENS ?? "", 10);
+	const rawMax =
+		parseInt(env.PI_COMPACTION_MAX_TOKENS ?? "", 10) || fileProject.maxTokens || fileGlobal.maxTokens || NaN;
 	const maxTokens = Number.isFinite(rawMax)
 		? Math.min(65536, Math.max(2048, rawMax))
 		: DEFAULT_MAX_TOKENS;
@@ -242,7 +300,7 @@ Use this EXACT format:
 // is O(messages) with tiny constants. Any error → Tier-0 lists only.
 // =============================================================================
 
-import { closeSync, globSync, openSync, readSync, statSync } from "node:fs";
+import { closeSync, globSync, openSync, readFileSync, readSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
 
@@ -1115,11 +1173,12 @@ export default function (pi: ExtensionAPI) {
 				: []),
 		].join("\n\n");
 
-		// Model selection: PI_COMPACTION_MODEL pin, else the built-in default summarizer,
-		// else the session model. The default is a documented preference, not a lock-in —
-		// any provider/model works via env, and an unresolvable default falls through.
-		const cfg = resolveCompactionConfig();
-		const rawModel = (process.env.PI_COMPACTION_MODEL ?? "").trim();
+		// Model selection: env pin > project settings > global settings > built-in default
+		// summarizer > session model. File reads are two small JSON parses, fail-open.
+		const cfgCwd = typeof ctx.cwd === "string" && ctx.cwd ? ctx.cwd : process.cwd();
+		const { fileGlobal, fileProject } = loadFileSections(cfgCwd);
+		const cfg = resolveCompactionConfig(process.env, fileGlobal, fileProject);
+		const rawModel = (process.env.PI_COMPACTION_MODEL ?? "").trim() || fileProject.model || fileGlobal.model || "";
 		if (rawModel && (!cfg.provider || !cfg.modelId)) {
 			ctx.ui.notify(`Smart Compaction: ignoring malformed PI_COMPACTION_MODEL=${JSON.stringify(rawModel)} (want "provider/model-id"), using default summarizer`, "warning");
 		}

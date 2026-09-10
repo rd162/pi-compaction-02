@@ -387,6 +387,37 @@ const okResponse = {
 			}
 			console.log("PASS 27 anti-staleness");
 		}
+		// 28. settings-file section: project .pi/settings.json picked up, env wins, junk ignored
+		{
+			const fs = await import("node:fs");
+			const projDir = `${FIX}/.pi`;
+			const projFile = `${projDir}/settings.json`;
+			const saved = { ...process.env };
+			try {
+				fs.mkdirSync(projDir, { recursive: true });
+				fs.writeFileSync(projFile, JSON.stringify({ smartCompaction: { model: "fileprov/fm", reasoning: "low", maxTokens: 9000 } }));
+				const h = makeHarness(async () => okResponse, { id: "m", reasoning: true }, FIX);
+				await h.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h.ctx);
+				assert.deepEqual(h.calls.find((c) => c[0] === "find").slice(1), ["fileprov", "fm"], "file model used");
+				const o = h.calls.find((c) => c[0] === "complete")[3];
+				assert.equal(o.reasoning, "low", "file reasoning used");
+				assert.equal(o.maxTokens, 9000, "file maxTokens used");
+				process.env.PI_COMPACTION_MODEL = "envprov/em";
+				const h2 = makeHarness(async () => okResponse, { id: "m", reasoning: true }, FIX);
+				await h2.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h2.ctx);
+				assert.deepEqual(h2.calls.find((c) => c[0] === "find").slice(1), ["envprov", "em"], "env beats file");
+				delete process.env.PI_COMPACTION_MODEL;
+				fs.writeFileSync(projFile, "{not json");
+				const h3 = makeHarness(async () => okResponse, { id: "m", reasoning: true }, FIX);
+				await h3.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h3.ctx);
+				assert.deepEqual(h3.calls.find((c) => c[0] === "find").slice(1), ["openrouter", "meta/muse-spark-1.3-contributor"], "junk file -> built-in default");
+			} finally {
+				for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+				Object.assign(process.env, saved);
+				fs.rmSync(projDir, { recursive: true, force: true });
+			}
+			console.log("PASS 28 settings file");
+		}
 		console.log("ALL TESTS PASSED");
 	});
 }
