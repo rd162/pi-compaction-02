@@ -47,7 +47,7 @@ import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-a
 const DEFAULT_PROVIDER = "openrouter";
 const DEFAULT_MODEL_ID = "meta/muse-spark-1.3-contributor";
 const DEFAULT_REASONING = "medium";
-const DEFAULT_MAX_TOKENS = 16384;
+const DEFAULT_MAX_TOKENS = 24576; // ≈ pi's own min(0.8 * reserveTokens, model.max) at 32k reserve (round-5 review)
 const VALID_REASONING = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 
 interface CompactionModelConfig {

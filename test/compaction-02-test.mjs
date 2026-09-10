@@ -77,7 +77,7 @@ const okResponse = {
 	assert.ok(prompt.includes("Use this EXACT format"), "structured format");
 	assert.ok(prompt.includes("Additional focus: focus on auth"), "custom instructions");
 	assert.ok(!prompt.includes("<previous-summary>"), "no previous-summary tags");
-	assert.equal(opts.maxTokens, 16384);
+	assert.equal(opts.maxTokens, 24576);
 	assert.equal(opts.cacheRetention, "none");
 	assert.ok(opts.sessionId);
 	assert.equal(opts.reasoning, "medium");
@@ -327,7 +327,7 @@ const okResponse = {
 				await h2.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h2.ctx);
 				const opts2 = h2.calls.find((c) => c[0] === "complete")[3];
 				assert.equal(opts2.reasoning, "medium", "invalid reasoning -> default");
-				assert.equal(opts2.maxTokens, 16384, "invalid maxTokens -> default");
+				assert.equal(opts2.maxTokens, 24576, "invalid maxTokens -> default");
 				assert.deepEqual(h2.calls.find((c) => c[0] === "find").slice(1), ["openrouter", "meta/muse-spark-1.3-contributor"], "no env -> built-in default");
 				const h2b = makeHarness(async () => okResponse, null, FIX); // null: find misses everywhere
 				h2b.ctx.model = { id: "sess", reasoning: false }; // default unresolvable, session exists
@@ -366,7 +366,7 @@ const okResponse = {
 			const h = makeHarness(async (_m, _c, o) => { n++; budgets.push(o.maxTokens); return n === 1 ? { content: [], usage: {}, stopReason: "length" } : okResponse; }, { id: "m", reasoning: false }, FIX);
 			const out = await h.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h.ctx);
 			assert.ok(out?.compaction, "retry succeeds");
-			assert.deepEqual(budgets, [16384, 32768], "single 2x retry");
+			assert.deepEqual(budgets, [24576, 49152], "single 2x retry");
 			const h2 = makeHarness(async () => ({ content: [], usage: {}, stopReason: "length" }), { id: "m", reasoning: false }, FIX);
 			assert.equal(await h2.handler({ preparation: { ...prep, previousSummary: undefined, customInstructions: undefined }, signal: {} }, h2.ctx), undefined, "capped twice -> fallback");
 			const h3 = makeHarness(async () => ({ content: [], usage: {}, stopReason: "length" }), { id: "m", reasoning: false, maxTokens: 16384 }, FIX);

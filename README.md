@@ -20,7 +20,7 @@ No hardcoded models. Everything is environment, read fresh on every compaction (
 |---|---|---|
 | `PI_COMPACTION_MODEL` | `openrouter/meta/muse-spark-1.3-contributor` | `"provider/model-id"` — any model; unresolvable → session model |
 | `PI_COMPACTION_REASONING` | `medium` | `off\|minimal\|low\|medium\|high\|xhigh\|max` (invalid → default) |
-| `PI_COMPACTION_MAX_TOKENS` | `16384` | Output cap, clamped to `2048..65536` and to the model's own max |
+| `PI_COMPACTION_MAX_TOKENS` | `24576` (≈ pi's own 0.8 × reserve budget) | Output cap, clamped to `2048..65536` and to the model's own max |
 
 Example (override the default with your own summarizer):
 
@@ -43,7 +43,7 @@ Malformed `PI_COMPACTION_MODEL` warns and falls back to the built-in default. `r
 Harnesses load the extension through pi's own `jiti` loader (same as production):
 
 ```bash
-node test/compaction-02-test.mjs      # 24 unit tests
+node test/compaction-02-test.mjs      # 27 unit tests
 node test/compaction-02-stress.mjs    # 900-msg hostile spans, determinism
 node test/compaction-02-stress2.mjs   # 56 exotic-tool commands (jq/jd/difft/bat/eza/sqlite3/ast-grep/ffmpeg…)
 node test/compaction-02-100k.mjs      # 100k tool pairs, budget exhaustion
